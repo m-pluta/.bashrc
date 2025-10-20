@@ -239,3 +239,30 @@ kill_background() {
   rm -f "$pidfile"
   echo "Cleared PID file: $pidfile"
 }
+
+flagman() {
+  local cmd="$1"
+  local out cleaned match escaped tmpfile padding
+
+  # No emulate in bash
+  out=$(man "$cmd" | col -b) || return $?
+  cleaned=$(echo "$out" | grep -E "^\s*-")
+  [[ -z "$cleaned" ]] && cleaned="$out"
+
+  padding=3
+  tmpfile=$(mktemp)
+  echo "$out" > "$tmpfile"
+
+  match=$(echo "$cleaned" | fzf \
+    --ansi \
+    --bind='ctrl-space:toggle-preview,ctrl-w:toggle-preview-wrap' \
+    --preview-label='Toggle preview: CTRL+SPACE; Toggle wrapping: CTRL+W' \
+    --preview "grep -A \$(expr \$(tput lines) - $padding) -B 0 \"\$(echo {} | sed 's/[\\\"\\[*^$]/\\\\&/g')\" $tmpfile")
+
+  rm -f "$tmpfile"
+  [[ -z "$match" ]] && return
+
+  escaped=$(echo "$match" | sed 's/[.[\(*^$+?{|]/\\&/g')
+  echo "$out" | less +/"$escaped"
+}
+

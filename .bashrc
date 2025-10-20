@@ -140,3 +140,4 @@ fi
 
 source ~/.bash_aliases
 export PAGER=less
+export LESS='-R'
